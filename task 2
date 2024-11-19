@@ -1,0 +1,155 @@
+#include <iostream>
+#include <vector>
+#include <limits>
+using namespace std;
+
+// Constants
+const char PLAYER = 'X';  // Human player
+const char AI = 'O';      // AI player
+const char EMPTY = '_';   // Empty cell
+
+// Function to display the board
+void displayBoard(const vector<vector<char>>& board) {
+    for (const auto& row : board) {
+        for (char cell : row)
+            cout << cell << " ";
+        cout << endl;
+    }
+    cout << endl;
+}
+
+// Check for a win condition
+char checkWinner(const vector<vector<char>>& board) {
+    // Rows and columns
+    for (int i = 0; i < 3; ++i) {
+        if (board[i][0] != EMPTY && board[i][0] == board[i][1] && board[i][1] == board[i][2])
+            return board[i][0];
+        if (board[0][i] != EMPTY && board[0][i] == board[1][i] && board[1][i] == board[2][i])
+            return board[0][i];
+    }
+    // Diagonals
+    if (board[0][0] != EMPTY && board[0][0] == board[1][1] && board[1][1] == board[2][2])
+        return board[0][0];
+    if (board[0][2] != EMPTY && board[0][2] == board[1][1] && board[1][1] == board[2][0])
+        return board[0][2];
+    // No winner
+    return EMPTY;
+}
+
+// Check if the board is full (draw)
+bool isDraw(const vector<vector<char>>& board) {
+    for (const auto& row : board)
+        for (char cell : row)
+            if (cell == EMPTY)
+                return false;
+    return true;
+}
+
+// Minimax algorithm with Alpha-Beta Pruning
+int minimax(vector<vector<char>>& board, bool isMaximizing, int alpha, int beta) {
+    char winner = checkWinner(board);
+    if (winner == AI) return 10;      // AI wins
+    if (winner == PLAYER) return -10; // Player wins
+    if (isDraw(board)) return 0;      // Draw
+
+    if (isMaximizing) {
+        int maxEval = numeric_limits<int>::min();
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                if (board[i][j] == EMPTY) {
+                    board[i][j] = AI;
+                    int eval = minimax(board, false, alpha, beta);
+                    board[i][j] = EMPTY;
+                    maxEval = max(maxEval, eval);
+                    alpha = max(alpha, eval);
+                    if (beta <= alpha) break; // Prune
+                }
+            }
+        }
+        return maxEval;
+    } else {
+        int minEval = numeric_limits<int>::max();
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                if (board[i][j] == EMPTY) {
+                    board[i][j] = PLAYER;
+                    int eval = minimax(board, true, alpha, beta);
+                    board[i][j] = EMPTY;
+                    minEval = min(minEval, eval);
+                    beta = min(beta, eval);
+                    if (beta <= alpha) break; // Prune
+                }
+            }
+        }
+        return minEval;
+    }
+}
+
+// AI's move
+pair<int, int> findBestMove(vector<vector<char>>& board) {
+    int bestValue = numeric_limits<int>::min();
+    pair<int, int> bestMove = {-1, -1};
+
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            if (board[i][j] == EMPTY) {
+                board[i][j] = AI;
+                int moveValue = minimax(board, false, numeric_limits<int>::min(), numeric_limits<int>::max());
+                board[i][j] = EMPTY;
+                if (moveValue > bestValue) {
+                    bestValue = moveValue;
+                    bestMove = {i, j};
+                }
+            }
+        }
+    }
+    return bestMove;
+}
+
+// Main game loop
+int main() {
+    vector<vector<char>> board(3, vector<char>(3, EMPTY));
+    cout << "Welcome to Tic-Tac-Toe!\n";
+    displayBoard(board);
+
+    while (true) {
+        // Player's turn
+        int row, col;
+        cout << "Enter your move (row and column: 0, 1, 2): ";
+        cin >> row >> col;
+        if (board[row][col] != EMPTY) {
+            cout << "Invalid move. Try again.\n";
+            continue;
+        }
+        board[row][col] = PLAYER;
+        displayBoard(board);
+
+        // Check for game end
+        if (checkWinner(board) == PLAYER) {
+            cout << "You win! Congratulations!\n";
+            break;
+        }
+        if (isDraw(board)) {
+            cout << "It's a draw!\n";
+            break;
+        }
+
+        // AI's turn
+        cout << "AI is making a move...\n";
+        pair<int, int> aiMove = findBestMove(board);
+        board[aiMove.first][aiMove.second] = AI;
+        displayBoard(board);
+
+        
+        if (checkWinner(board) == AI) {
+            cout << "AI wins! Better luck next time.\n";
+            break;
+        }
+        if (isDraw(board)) {
+            cout << "It's a draw!\n";
+            break;
+        }
+    }
+
+    return 0;
+}
